@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shelf Check - Unit Price Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#14202b;--mute:#5d6b78;--line:#d5dce3;--tag:#ffd23f;--tagink:#14202b;--good:#0f7a4a;--goodbg:#dcf3e7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f161d;--card:#18222c;--ink:#eef2f6;--mute:#93a1ae;--line:#2b3946;--good:#5fd49b;--goodbg:#143528}}
+:root[data-theme="dark"]{--bg:#0f161d;--card:#18222c;--ink:#eef2f6;--mute:#93a1ae;--line:#2b3946;--good:#5fd49b;--goodbg:#143528}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.4}
+main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-size:30px;font-weight:800;margin:4px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 18px}
+#theme{font:inherit;font-weight:600;font-size:14px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}
+#theme:focus-visible,input:focus-visible{outline:3px solid var(--tag);outline-offset:1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;transition:border-color .2s,box-shadow .2s}
+.card.win{border-color:var(--good);box-shadow:0 0 0 2px var(--good)}
+.tag{display:inline-block;background:var(--tag);color:var(--tagink);font-weight:800;padding:3px 10px;border-radius:4px;font-size:15px;margin-bottom:10px}
+label{display:block;font-size:13px;color:var(--mute);margin:8px 0 3px}
+input{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.per{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:14px}
+.per div{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.per b,.stats b{font-variant-numeric:tabular-nums}
+#result{margin-top:16px}
+.verdict{background:var(--goodbg);border-radius:10px;padding:16px;border:1px solid var(--good)}
+.verdict h2{margin:0 0 4px;font-size:22px;font-weight:800;color:var(--good)}
+.verdict p{margin:0}
+.stats{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 14px}
+.stats div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.stats div:last-child{border:0}
+.stats span{color:var(--mute)}
+.stats b{text-align:right}
+.note{padding:14px;border-radius:10px;border:1px dashed var(--line);color:var(--mute)}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<div class="top">
+  <div><h1>Shelf Check</h1><p class="sub">Enter price and amount from each label. Use the same kind of unit for both.</p></div>
+  <button id="theme" type="button" aria-label="Switch between dark and light mode"></button>
+</div>
+
+<div class="grid">
+  <section class="card" id="cardA">
+    <span class="tag">Product A</span>
+    <label for="pA">Price</label><input id="pA" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 3.49">
+    <label for="aA">Amount</label><input id="aA" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
+    <label for="qA">Number of packs (optional)</label><input id="qA" type="number" inputmode="numeric" min="1" step="1" value="1">
+    <div class="per" id="perA"></div>
+  </section>
+  <section class="card" id="cardB">
+    <span class="tag">Product B</span>
+    <label for="pB">Price</label><input id="pB" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 5.99">
+    <label for="aB">Amount</label><input id="aB" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1000">
+    <label for="qB">Number of packs (optional)</label><input id="qB" type="number" inputmode="numeric" min="1" step="1" value="1">
+    <div class="per" id="perB"></div>
+  </section>
+</div>
+
+<div id="result"></div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const root=document.documentElement,btn=$("theme");
+function isDark(){const t=root.getAttribute("data-theme");return t?t==="dark":matchMedia("(prefers-color-scheme:dark)").matches}
+function paint(){btn.textContent=isDark()?"☀ Light mode":"☾ Dark mode"}
+btn.addEventListener("click",()=>{const n=isDark()?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("theme",n)}catch(e){}paint()});
+try{const s=localStorage.getItem("theme");if(s)root.setAttribute("data-theme",s)}catch(e){}
+paint();
+
+function money(x){if(!isFinite(x))return"-";const a=Math.abs(x);return x.toFixed(a>=100?0:a>=1?2:a>=.01?3:5)}
+function read(s){
+  const p=parseFloat($("p"+s).value),a=parseFloat($("a"+s).value),q=Math.max(1,parseInt($("q"+s).value)||1);
+  if(!(p>0)||!(a>0))return null;
+  const total=a*q;return{p,total,per:p/total};
+}
+function lines(d){
+  return `<div><span>Per 1 unit</span><b>${money(d.per)}</b></div><div><span>Per 100 units</span><b>${money(d.per*100)}</b></div><div><span>Per 1000 units</span><b>${money(d.per*1000)}</b></div><div><span>Total amount</span><b>${+d.total.toFixed(3)}</b></div>`;
+}
+function calc(){
+  const A=read("A"),B=read("B"),res=$("result");
+  $("perA").innerHTML=A?lines(A):"";$("perB").innerHTML=B?lines(B):"";
+  $("cardA").classList.remove("win");$("cardB").classList.remove("win");
+  if(!A||!B){res.innerHTML='<div class="note">Fill in both products to see which one is the better deal.</div>';return}
+  if(Math.abs(A.per-B.per)/Math.max(A.per,B.per)<1e-9){res.innerHTML='<div class="verdict"><h2>It\'s a tie</h2><p>Both cost the same per unit.</p></div>';return}
+  const aw=A.per<B.per,w=aw?A:B,l=aw?B:A,wn=aw?"A":"B",ln=aw?"B":"A";
+  $("card"+wn).classList.add("win");
+  const less=(1-w.per/l.per)*100,more=(l.per/w.per-1)*100,extra=(w.total/w.p)/(l.total/l.p)-1,save=l.p-l.total*w.per;
+  res.innerHTML=`<div class="verdict"><h2>Product ${wn} is the better deal</h2><p>It costs ${less.toFixed(1)}% less per unit than Product ${ln}.</p></div>
+  <div class="stats">
+   <div><span>Price per unit: A / B</span><b>${money(A.per)} / ${money(B.per)}</b></div>
+   <div><span>Price per 100 units: A / B</span><b>${money(A.per*100)} / ${money(B.per*100)}</b></div>
+   <div><span>Difference per 100 units</span><b>${money(Math.abs(A.per-B.per)*100)}</b></div>
+   <div><span>Product ${ln} is more expensive by</span><b>${more.toFixed(1)}%</b></div>
+   <div><span>Product ${wn} gives more per money</span><b>+${(extra*100).toFixed(1)}%</b></div>
+   <div><span>You save buying ${ln}'s amount of ${wn}</span><b>${money(save)}</b></div>
+   <div><span>Price gap on the shelf</span><b>${money(Math.abs(A.p-B.p))} (${A.p<B.p?"A":"B"} is cheaper)</b></div>
+  </div>`;
+}
+document.querySelectorAll("input").forEach(e=>e.addEventListener("input",calc));
+calc();
+</script>
+</body>
+</html>
